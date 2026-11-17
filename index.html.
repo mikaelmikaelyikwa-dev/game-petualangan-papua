@@ -4,37 +4,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Petualangan Papua</title>
+<title>Petualangan Papua - RODEX</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
     background: #174d35;
     color: white;
+    font-family: Arial, sans-serif;
     text-align: center;
 }
 
 h1 {
-    color: yellow;
+    color: #ffe16b;
+    margin-top: 20px;
 }
 
 canvas {
     width: 95%;
     max-width: 900px;
-    background: skyblue;
     border: 4px solid white;
-    border-radius: 10px;
+    border-radius: 12px;
+    background: skyblue;
 }
 
 button {
-    padding: 12px 20px;
+    padding: 12px 18px;
     margin: 5px;
-    background: orange;
     border: none;
-    border-radius: 8px;
-    font-size: 18px;
+    border-radius: 9px;
+    background: orange;
+    font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
+}
+
+button:active {
+    background: yellow;
+}
+
+#message {
+    color: #ffe16b;
+    font-weight: bold;
 }
 </style>
 </head>
@@ -42,208 +57,490 @@ button {
 <body>
 
 <h1>🌴 PETUALANGAN PAPUA 🦜</h1>
-<p>Kumpulkan buah merah dan jelajahi alam Papua!</p>
 
-<h3>Skor: <span id="score">0</span> | Nyawa: <span id="lives">3</span></h3>
+<p>Petualangan bersama RODEX di tanah Papua!</p>
+
+<h3>
+Skor: <span id="score">0</span>
+|
+Nyawa: <span id="lives">3</span>
+</h3>
 
 <canvas id="game" width="900" height="450"></canvas>
 
-<br>
-<button onclick="left=true">⬅ Kiri</button>
-<button onclick="jump()">⬆ Lompat</button>
-<button onclick="right=true">Kanan ➡</button>
-<button onclick="startGame()">Mulai / Ulangi</button>
+<p id="message">
+Selamat datang di Papua!
+</p>
+
+<div>
+<button id="btnLeft">⬅ KIRI</button>
+<button id="btnJump">⬆ LOMPAT</button>
+<button id="btnRight">KANAN ➡</button>
+<button onclick="startGame()">MULAI / ULANGI</button>
+</div>
 
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player, fruits, obstacles;
+let player;
+let fruits;
+let obstacles;
+
 let score = 0;
 let lives = 3;
+let running = false;
+
 let left = false;
 let right = false;
-let running = false;
-let frame;
+let invulnerable = 0;
 
 function startGame() {
-    player = {x:80, y:350, vy:0};
+
+    player = {
+        x: 80,
+        y: 350,
+        vy: 0
+    };
+
     fruits = [];
     obstacles = [];
+
     score = 0;
     lives = 3;
+    invulnerable = 0;
+
+    for (let i = 0; i < 10; i++) {
+        fruits.push({
+            x: 250 + i * 150,
+            y: 300
+        });
+    }
+
+    for (let i = 0; i < 6; i++) {
+        obstacles.push({
+            x: 450 + i * 300,
+            y: 390,
+            w: 45,
+            h: 30,
+            hit: false
+        });
+    }
+
     running = true;
 
-    for(let i=0;i<10;i++) {
-        fruits.push({
-            x:250+i*150,
-            y:300
-        });
-    }
-
-    for(let i=0;i<6;i++) {
-        obstacles.push({
-            x:400+i*300,
-            y:390,
-            w:40,
-            h:30
-        });
-    }
+    document.getElementById("message").innerText =
+        "Kumpulkan 10 buah merah bersama RODEX!";
 
     update();
 }
 
+// LATAR PAPUA
+
 function drawBackground() {
+
     // Langit
     ctx.fillStyle = "#79d4e5";
-    ctx.fillRect(0,0,900,450);
+    ctx.fillRect(0, 0, 900, 450);
 
-    // Pegunungan Papua
+    // Gunung Papua
     ctx.fillStyle = "#397b48";
+
     ctx.beginPath();
-    ctx.moveTo(0,300);
-    ctx.lineTo(150,80);
-    ctx.lineTo(300,300);
-    ctx.lineTo(450,100);
-    ctx.lineTo(650,300);
-    ctx.lineTo(800,90);
-    ctx.lineTo(900,300);
+    ctx.moveTo(0, 300);
+    ctx.lineTo(150, 80);
+    ctx.lineTo(300, 300);
+    ctx.lineTo(450, 100);
+    ctx.lineTo(650, 300);
+    ctx.lineTo(800, 90);
+    ctx.lineTo(900, 300);
+    ctx.fill();
+
+    // Gunung kedua
+    ctx.fillStyle = "#245c3a";
+
+    ctx.beginPath();
+    ctx.moveTo(0, 350);
+    ctx.lineTo(200, 190);
+    ctx.lineTo(380, 350);
+    ctx.lineTo(600, 180);
+    ctx.lineTo(900, 350);
     ctx.fill();
 
     // Rumah Honai
-    ctx.fillStyle = "#68452b";
-    ctx.beginPath();
-    ctx.moveTo(680,330);
-    ctx.quadraticCurveTo(730,240,780,330);
-    ctx.fill();
+    drawHonai(680, 330);
+
+    // Pepohonan
+    for (let x = 30; x < 900; x += 130) {
+
+        ctx.fillStyle = "#754b2b";
+        ctx.fillRect(x, 320, 15, 70);
+
+        ctx.fillStyle = "#176c3c";
+        ctx.beginPath();
+        ctx.arc(x + 7, 310, 35, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     // Tanah
     ctx.fillStyle = "#9b7044";
-    ctx.fillRect(0,390,900,60);
+    ctx.fillRect(0, 390, 900, 60);
 
     // Rumput
-    ctx.fillStyle = "green";
-    ctx.fillRect(0,385,900,8);
+    ctx.fillStyle = "#267b35";
+    ctx.fillRect(0, 385, 900, 8);
 
-    // Pohon
-    for(let x=30;x<900;x+=130) {
-        ctx.fillStyle="#754b2b";
-        ctx.fillRect(x,320,15,70);
-
-        ctx.fillStyle="#176c3c";
-        ctx.beginPath();
-        ctx.arc(x+7,310,35,0,Math.PI*2);
-        ctx.fill();
-    }
-}
-
-function drawPlayer() {
-    // Kepala
-    ctx.fillStyle="#f1c49b";
+    // Matahari
+    ctx.fillStyle = "yellow";
     ctx.beginPath();
-    ctx.arc(player.x,player.y-25,13,0,Math.PI*2);
+    ctx.arc(760, 65, 30, 0, Math.PI * 2);
     ctx.fill();
 
-    // Badan
-    ctx.fillStyle="red";
-    ctx.fillRect(player.x-12,player.y-12,24,25);
-
-    // Kaki
-    ctx.fillStyle="black";
-    ctx.fillRect(player.x-10,player.y+13,8,18);
-    ctx.fillRect(player.x+3,player.y+13,8,18);
+    // Burung Cenderawasih sederhana
+    ctx.fillStyle = "#e6a62e";
+    ctx.beginPath();
+    ctx.ellipse(540, 150, 16, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
 }
 
+function drawHonai(x, y) {
+
+    ctx.fillStyle = "#68452b";
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(
+        x + 50, y - 90,
+        x + 100, y
+    );
+    ctx.fill();
+
+    ctx.fillStyle = "#382719";
+    ctx.fillRect(x + 40, y - 15, 20, 45);
+}
+
+// KARAKTER PEMAIN
+
+function drawPlayer() {
+
+    if (invulnerable > 0 &&
+        Math.floor(invulnerable / 5) % 2 === 0) {
+        return;
+    }
+
+    // Kepala
+    ctx.fillStyle = "#f1c49b";
+
+    ctx.beginPath();
+    ctx.arc(
+        player.x,
+        player.y - 25,
+        13,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+
+    // Rambut
+    ctx.fillStyle = "#202020";
+    ctx.fillRect(player.x - 12, player.y - 39, 24, 7);
+
+    // Badan
+    ctx.fillStyle = "red";
+    ctx.fillRect(
+        player.x - 12,
+        player.y - 12,
+        24,
+        25
+    );
+
+    // Kaki
+    ctx.fillStyle = "black";
+    ctx.fillRect(player.x - 10, player.y + 13, 8, 18);
+    ctx.fillRect(player.x + 3, player.y + 13, 8, 18);
+}
+
+// KARAKTER RODEX
+
+function drawRodex() {
+
+    // Kepala
+    ctx.fillStyle = "#d9a477";
+
+    ctx.beginPath();
+    ctx.arc(820, 340, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rambut
+    ctx.fillStyle = "#202020";
+    ctx.fillRect(808, 324, 24, 7);
+
+    // Mata
+    ctx.fillStyle = "black";
+    ctx.fillRect(814, 337, 3, 3);
+    ctx.fillRect(824, 337, 3, 3);
+
+    // Jas
+    ctx.fillStyle = "#172b43";
+    ctx.fillRect(805, 355, 30, 42);
+
+    // Kemeja
+    ctx.fillStyle = "white";
+    ctx.fillRect(815, 355, 10, 25);
+
+    // Dasi merah
+    ctx.fillStyle = "red";
+
+    ctx.beginPath();
+    ctx.moveTo(819, 355);
+    ctx.lineTo(823, 355);
+    ctx.lineTo(825, 379);
+    ctx.lineTo(821, 384);
+    ctx.fill();
+
+    // Kaki
+    ctx.fillStyle = "black";
+    ctx.fillRect(809, 397, 9, 20);
+    ctx.fillRect(824, 397, 9, 20);
+
+    // Nama Rodex
+    ctx.fillStyle = "white";
+    ctx.font = "bold 17px Arial";
+    ctx.fillText("RODEX", 790, 310);
+
+    // Pesan
+    ctx.fillStyle = "white";
+    ctx.font = "13px Arial";
+    ctx.fillText("Selamat datang!", 755, 290);
+}
+
+// LOMPAT
+
 function jump() {
-    if(running && player.y >= 350) {
+
+    if (running && player.y >= 350) {
         player.vy = -13;
     }
 }
 
-function update() {
-    if(!running) return;
+// PERMAINAN UTAMA
 
-    ctx.clearRect(0,0,900,450);
+function update() {
+
+    if (!running) return;
+
+    ctx.clearRect(0, 0, 900, 450);
+
     drawBackground();
 
     // Gerakan pemain
-    if(left) player.x -= 5;
-    if(right) player.x += 5;
 
-    player.x = Math.max(15,Math.min(885,player.x));
+    if (left) player.x -= 5;
+    if (right) player.x += 5;
+
+    player.x = Math.max(
+        15,
+        Math.min(885, player.x)
+    );
 
     player.vy += 0.6;
     player.y += player.vy;
 
-    if(player.y > 350) {
+    if (player.y > 350) {
         player.y = 350;
         player.vy = 0;
     }
 
+    if (invulnerable > 0) {
+        invulnerable--;
+    }
+
     // Buah merah
-    fruits.forEach((f,i)=>{
-        ctx.fillStyle="red";
+
+    fruits.forEach((f, i) => {
+
+        ctx.fillStyle = "red";
+
         ctx.beginPath();
-        ctx.arc(f.x,f.y,12,0,Math.PI*2);
+        ctx.arc(f.x, f.y, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle="green";
-        ctx.fillRect(f.x-3,f.y-17,6,8);
+        ctx.fillStyle = "green";
+        ctx.fillRect(f.x - 3, f.y - 17, 6, 8);
 
-        if(Math.abs(player.x-f.x)<22 &&
-           Math.abs(player.y-25-f.y)<25) {
-            fruits.splice(i,1);
+        if (
+            Math.abs(player.x - f.x) < 22 &&
+            Math.abs(player.y - 25 - f.y) < 25
+        ) {
+            fruits.splice(i, 1);
             score++;
         }
+
     });
 
-    // Rintangan
-    obstacles.forEach((o)=>{
-        ctx.fillStyle="#555";
-        ctx.fillRect(o.x,o.y,o.w,o.h);
+    // Rintangan batu
 
-        if(player.x+10>o.x &&
-           player.x-10<o.x+o.w &&
-           player.y+15>o.y) {
-            lives--;
-            o.x=-100;
+    obstacles.forEach((o) => {
+
+        ctx.fillStyle = "#555";
+        ctx.fillRect(o.x, o.y, o.w, o.h);
+
+        if (
+            !o.hit &&
+            player.x + 10 > o.x &&
+            player.x - 10 < o.x + o.w &&
+            player.y + 15 > o.y
+        ) {
+
+            if (invulnerable === 0) {
+
+                lives--;
+                invulnerable = 80;
+                o.hit = true;
+
+            }
         }
+
     });
 
-    // Perbarui tampilan
-    document.getElementById("score").innerText=score;
-    document.getElementById("lives").innerText=lives;
+    // Gambar karakter
 
     drawPlayer();
+    drawRodex();
 
-    if(score>=10) {
-        running=false;
-        alert("Selamat! Kamu berhasil menjelajahi Papua!");
+    // Perbarui skor
+
+    document.getElementById("score").innerText = score;
+    document.getElementById("lives").innerText = lives;
+
+    // Kondisi menang
+
+    if (score >= 10) {
+
+        running = false;
+
+        document.getElementById("message").innerText =
+            "SELAMAT! Kamu berhasil menyelesaikan misi Papua bersama RODEX!";
+
         return;
     }
 
-    if(lives<=0) {
-        running=false;
-        alert("Game selesai! Coba lagi.");
+    // Kondisi kalah
+
+    if (lives <= 0) {
+
+        running = false;
+
+        document.getElementById("message").innerText =
+            "GAME OVER! Silakan coba lagi.";
+
         return;
     }
 
-    obstacles.forEach(o=>o.x-=2);
+    // Gerakan rintangan
+
+    obstacles.forEach(o => {
+        o.x -= 2;
+    });
+
+    obstacles = obstacles.filter(o => o.x > -60);
+
     requestAnimationFrame(update);
 }
 
-// Keyboard
-document.addEventListener("keydown",e=>{
-    if(e.key==="ArrowLeft" || e.key==="a") left=true;
-    if(e.key==="ArrowRight" || e.key==="d") right=true;
-    if(e.key==="ArrowUp" || e.key===" ") jump();
+// KONTROL KEYBOARD
+
+document.addEventListener("keydown", function(e) {
+
+    if (
+        e.key === "ArrowLeft" ||
+        e.key === "a" ||
+        e.key === "A"
+    ) {
+        left = true;
+    }
+
+    if (
+        e.key === "ArrowRight" ||
+        e.key === "d" ||
+        e.key === "D"
+    ) {
+        right = true;
+    }
+
+    if (
+        e.key === "ArrowUp" ||
+        e.key === " "
+    ) {
+        e.preventDefault();
+        jump();
+    }
+
 });
 
-document.addEventListener("keyup",e=>{
-    if(e.key==="ArrowLeft" || e.key==="a") left=false;
-    if(e.key==="ArrowRight" || e.key==="d") right=false;
+document.addEventListener("keyup", function(e) {
+
+    if (
+        e.key === "ArrowLeft" ||
+        e.key === "a" ||
+        e.key === "A"
+    ) {
+        left = false;
+    }
+
+    if (
+        e.key === "ArrowRight" ||
+        e.key === "d" ||
+        e.key === "D"
+    ) {
+        right = false;
+    }
+
 });
+
+// KONTROL HP
+
+function holdButton(id, direction) {
+
+    const button = document.getElementById(id);
+
+    button.addEventListener("pointerdown", function(e) {
+        e.preventDefault();
+        direction(true);
+    });
+
+    ["pointerup", "pointerleave", "pointercancel"].forEach(event => {
+
+        button.addEventListener(event, function() {
+            direction(false);
+        });
+
+    });
+}
+
+holdButton("btnLeft", value => left = value);
+holdButton("btnRight", value => right = value);
+
+document.getElementById("btnJump").addEventListener(
+    "pointerdown",
+    function(e) {
+        e.preventDefault();
+        jump();
+    }
+);
+
+// TAMPILAN AWAL
+
+drawBackground();
+
+ctx.fillStyle = "white";
+ctx.font = "bold 28px Arial";
+ctx.fillText("PETUALANGAN PAPUA", 280, 50);
+
+drawRodex();
 
 </script>
+
 </body>
 </html>
