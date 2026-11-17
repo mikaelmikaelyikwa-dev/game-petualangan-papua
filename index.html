@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petualangan Papua</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #174d35;
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    color: yellow;
+}
+
+canvas {
+    width: 95%;
+    max-width: 900px;
+    background: skyblue;
+    border: 4px solid white;
+    border-radius: 10px;
+}
+
+button {
+    padding: 12px 20px;
+    margin: 5px;
+    background: orange;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🌴 PETUALANGAN PAPUA 🦜</h1>
+<p>Kumpulkan buah merah dan jelajahi alam Papua!</p>
+
+<h3>Skor: <span id="score">0</span> | Nyawa: <span id="lives">3</span></h3>
+
+<canvas id="game" width="900" height="450"></canvas>
+
+<br>
+<button onclick="left=true">⬅ Kiri</button>
+<button onclick="jump()">⬆ Lompat</button>
+<button onclick="right=true">Kanan ➡</button>
+<button onclick="startGame()">Mulai / Ulangi</button>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player, fruits, obstacles;
+let score = 0;
+let lives = 3;
+let left = false;
+let right = false;
+let running = false;
+let frame;
+
+function startGame() {
+    player = {x:80, y:350, vy:0};
+    fruits = [];
+    obstacles = [];
+    score = 0;
+    lives = 3;
+    running = true;
+
+    for(let i=0;i<10;i++) {
+        fruits.push({
+            x:250+i*150,
+            y:300
+        });
+    }
+
+    for(let i=0;i<6;i++) {
+        obstacles.push({
+            x:400+i*300,
+            y:390,
+            w:40,
+            h:30
+        });
+    }
+
+    update();
+}
+
+function drawBackground() {
+    // Langit
+    ctx.fillStyle = "#79d4e5";
+    ctx.fillRect(0,0,900,450);
+
+    // Pegunungan Papua
+    ctx.fillStyle = "#397b48";
+    ctx.beginPath();
+    ctx.moveTo(0,300);
+    ctx.lineTo(150,80);
+    ctx.lineTo(300,300);
+    ctx.lineTo(450,100);
+    ctx.lineTo(650,300);
+    ctx.lineTo(800,90);
+    ctx.lineTo(900,300);
+    ctx.fill();
+
+    // Rumah Honai
+    ctx.fillStyle = "#68452b";
+    ctx.beginPath();
+    ctx.moveTo(680,330);
+    ctx.quadraticCurveTo(730,240,780,330);
+    ctx.fill();
+
+    // Tanah
+    ctx.fillStyle = "#9b7044";
+    ctx.fillRect(0,390,900,60);
+
+    // Rumput
+    ctx.fillStyle = "green";
+    ctx.fillRect(0,385,900,8);
+
+    // Pohon
+    for(let x=30;x<900;x+=130) {
+        ctx.fillStyle="#754b2b";
+        ctx.fillRect(x,320,15,70);
+
+        ctx.fillStyle="#176c3c";
+        ctx.beginPath();
+        ctx.arc(x+7,310,35,0,Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function drawPlayer() {
+    // Kepala
+    ctx.fillStyle="#f1c49b";
+    ctx.beginPath();
+    ctx.arc(player.x,player.y-25,13,0,Math.PI*2);
+    ctx.fill();
+
+    // Badan
+    ctx.fillStyle="red";
+    ctx.fillRect(player.x-12,player.y-12,24,25);
+
+    // Kaki
+    ctx.fillStyle="black";
+    ctx.fillRect(player.x-10,player.y+13,8,18);
+    ctx.fillRect(player.x+3,player.y+13,8,18);
+}
+
+function jump() {
+    if(running && player.y >= 350) {
+        player.vy = -13;
+    }
+}
+
+function update() {
+    if(!running) return;
+
+    ctx.clearRect(0,0,900,450);
+    drawBackground();
+
+    // Gerakan pemain
+    if(left) player.x -= 5;
+    if(right) player.x += 5;
+
+    player.x = Math.max(15,Math.min(885,player.x));
+
+    player.vy += 0.6;
+    player.y += player.vy;
+
+    if(player.y > 350) {
+        player.y = 350;
+        player.vy = 0;
+    }
+
+    // Buah merah
+    fruits.forEach((f,i)=>{
+        ctx.fillStyle="red";
+        ctx.beginPath();
+        ctx.arc(f.x,f.y,12,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle="green";
+        ctx.fillRect(f.x-3,f.y-17,6,8);
+
+        if(Math.abs(player.x-f.x)<22 &&
+           Math.abs(player.y-25-f.y)<25) {
+            fruits.splice(i,1);
+            score++;
+        }
+    });
+
+    // Rintangan
+    obstacles.forEach((o)=>{
+        ctx.fillStyle="#555";
+        ctx.fillRect(o.x,o.y,o.w,o.h);
+
+        if(player.x+10>o.x &&
+           player.x-10<o.x+o.w &&
+           player.y+15>o.y) {
+            lives--;
+            o.x=-100;
+        }
+    });
+
+    // Perbarui tampilan
+    document.getElementById("score").innerText=score;
+    document.getElementById("lives").innerText=lives;
+
+    drawPlayer();
+
+    if(score>=10) {
+        running=false;
+        alert("Selamat! Kamu berhasil menjelajahi Papua!");
+        return;
+    }
+
+    if(lives<=0) {
+        running=false;
+        alert("Game selesai! Coba lagi.");
+        return;
+    }
+
+    obstacles.forEach(o=>o.x-=2);
+    requestAnimationFrame(update);
+}
+
+// Keyboard
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft" || e.key==="a") left=true;
+    if(e.key==="ArrowRight" || e.key==="d") right=true;
+    if(e.key==="ArrowUp" || e.key===" ") jump();
+});
+
+document.addEventListener("keyup",e=>{
+    if(e.key==="ArrowLeft" || e.key==="a") left=false;
+    if(e.key==="ArrowRight" || e.key==="d") right=false;
+});
+
+</script>
+</body>
+</html>
